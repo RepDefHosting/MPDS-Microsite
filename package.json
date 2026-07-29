@@ -60,6 +60,9 @@
   ],
   "license": "MIT",
   "main": "n/a",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "build": "node scripts/prebuild && gatsby clean && gatsby build",
     "dev": "node scripts/prebuild && gatsby develop",

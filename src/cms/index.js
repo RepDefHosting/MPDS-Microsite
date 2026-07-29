@@ -99,13 +99,27 @@ const pages = [
   // },
 ]
 
+// Deploy target controls the CMS auth backend:
+// - Netlify deploys use git-gateway (Netlify Identity handles auth)
+// - Vercel deploys use github (a small OAuth proxy in api/auth.js + api/callback.js
+//   handles auth) — set GATSBY_CMS_BACKEND=github in the Vercel project's env vars
+const backend =
+  process.env.GATSBY_CMS_BACKEND === 'github'
+    ? {
+        name: 'github',
+        repo: process.env.GATSBY_GITHUB_REPO,
+        branch: 'master',
+        base_url: process.env.GATSBY_OAUTH_BASE_URL,
+        auth_endpoint: 'api/auth',
+      }
+    : {
+        name: 'git-gateway',
+        branch: 'master',
+      }
+
 CMS.init({
   config: {
-    backend: {
-      name: 'git-gateway',
-      repo: 'surajit2608/MPDSBuild',
-      branch: 'master',
-    },
+    backend,
     // publish_mode: 'editorial_workflow',
     media_folder: 'static/img',
     public_folder: '/img',
