@@ -16,35 +16,36 @@ log in with a GitHub account, and a small OAuth proxy (two serverless
 functions already in this repo, `api/auth.js` and `api/callback.js`) handles
 the login handshake.
 
-One GitHub OAuth App, set up once, is reused for every client site deployed
-to Vercel. You do **not** need a new OAuth App per client.
+**Important — one GitHub OAuth App per client, not a shared one.** A GitHub
+OAuth App only supports a single registered callback URL. If several client
+sites shared one App, whichever client's domain was entered last would break
+login for every other client the moment two people needed to edit content on
+different days. Creating a dedicated OAuth App per client avoids this — it
+takes about 2 minutes and there's no meaningful limit on how many an org can
+have.
+
+**SEO note — this also protects the client's domain ranking.** Every Vercel
+project gets a permanent `project-name.vercel.app` domain that stays live and
+crawlable even after a custom domain is attached. Left alone, that's a
+duplicate-content risk: Google could index the `.vercel.app` URL alongside
+(or instead of) the client's real domain, which directly undermines this
+template's whole purpose (see `CLAUDE.md`'s SEO Architecture section — ranking
+for `[Client Name]` is the product). Two things now guard against this:
+- `SEO.js` emits a `<link rel="canonical">` tag pointing at `siteUrl` from
+  `sitedata.md` (the client's real domain) on every page, regardless of which
+  host served the request.
+- Once a client's custom domain is attached, enable Vercel's "redirect to
+  primary domain" for the `.vercel.app` domain (see Part 3) so it 301s
+  everything to the real domain instead of serving duplicate content.
+
+Because each client gets its own OAuth App with its own domain as the
+callback, enabling that redirect never breaks CMS login — the login flow was
+never depending on the `.vercel.app` domain staying reachable in the first
+place.
 
 ---
 
-## Part 1 — One-time setup (already done / only redo if it breaks)
-
-1. Go to **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**
-   (create it under the `RepDefHosting` org if possible, otherwise a shared
-   team account).
-2. Fill in:
-   - **Application name**: `RepDefHosting Microsite CMS`
-   - **Homepage URL**: `https://repdefhostings-projects.vercel.app` (or any
-     placeholder — not load-bearing)
-   - **Authorization callback URL**: see note below
-3. Save the app. Copy the **Client ID** and generate + copy a **Client Secret**.
-   Store both somewhere the team can retrieve them (password manager /
-   shared vault) — you'll paste these into every client project's env vars.
-
-> **Callback URL note:** GitHub OAuth Apps only support one callback URL per
-> app (unlike GitHub Apps, which support wildcards). Since every client site
-> has its own Vercel domain, the exact callback URL differs per project. In
-> practice this is only a problem the first time a client's custom domain is
-> attached — see **Part 3** for the fix. Day one, the default
-> `*.vercel.app` preview domain works immediately.
-
----
-
-## Part 2 — Deploy a new client site
+## Part 1 — Deploy a new client site
 
 1. From the [MPDS-Microsite README](../README.md), click **Deploy with
    Vercel**.
@@ -52,52 +53,66 @@ to Vercel. You do **not** need a new OAuth App per client.
 3. When prompted, name the new GitHub repository (e.g. `JaneSmith`) — this
    creates a duplicate repo under `RepDefHosting` and a matching Vercel
    project, the same way the Netlify button does today.
-4. On the **Configure Project** screen, Vercel will prompt for these
-   environment variables (from `vercel.json`'s declared list) — fill them in:
+4. **Create this client's GitHub OAuth App** (GitHub → Settings → Developer
+   settings → OAuth Apps → New OAuth App):
+   - **Application name**: `<Client Name> Microsite CMS`
+   - **Homepage URL**: the client's intended domain, or the project's
+     `*.vercel.app` URL if a custom domain isn't ready yet
+   - **Authorization callback URL**: `https://<project>.vercel.app/api/callback`
+     (update this later in Part 3 once the custom domain is live)
+   - Save, then generate a **Client Secret**. Copy both the Client ID and
+     Secret — store them in the team's shared vault, labeled with the client
+     name.
+5. On Vercel's **Configure Project** screen (or afterward, in Project
+   Settings → Environment Variables), set:
 
    | Variable | Value |
    |---|---|
    | `GATSBY_CMS_BACKEND` | `github` |
-   | `GATSBY_GITHUB_REPO` | `RepDefHosting/<new-repo-name>` (exact repo you just named in step 3) |
-   | `GATSBY_OAUTH_BASE_URL` | the Vercel project URL, e.g. `https://jane-smith.vercel.app` (you can leave this blank and fill it in after first deploy once you know the assigned domain, then redeploy) |
-   | `GITHUB_CLIENT_ID` | from Part 1 |
-   | `GITHUB_CLIENT_SECRET` | from Part 1 |
+   | `GATSBY_GITHUB_REPO` | `RepDefHosting/<new-repo-name>` (exact repo you named in step 3) |
+   | `GATSBY_OAUTH_BASE_URL` | `https://<project>.vercel.app` (matches the callback URL registered in step 4) |
+   | `GITHUB_CLIENT_ID` | from step 4, this client's OAuth App |
+   | `GITHUB_CLIENT_SECRET` | from step 4, this client's OAuth App |
 
-5. Click **Deploy**. Wait for the build to finish.
-6. Once deployed, confirm/update `GATSBY_OAUTH_BASE_URL` to match the actual
-   assigned domain (Project → Settings → Environment Variables), then trigger
-   a redeploy if you changed it.
-7. Visit `https://<project-domain>/admin/` — you should see the Decap CMS
+6. In `src/pages/sitedata.md`, make sure `siteUrl` is already set to the
+   client's intended final domain (even before that domain is attached) — the
+   canonical tag and Person schema both key off this field.
+7. Click **Deploy** (or redeploy, if env vars were added after the first
+   build). Wait for the build to finish.
+8. Visit `https://<project>.vercel.app/admin/` — you should see the Decap CMS
    login screen with a **Login with GitHub** button instead of Netlify
    Identity's email/password screen.
-8. Log in with a GitHub account that has write access to the new client repo
+9. Log in with a GitHub account that has write access to the new client repo
    (add the client's editor as a collaborator on the repo first, if needed).
 
 ---
 
-## Part 3 — Attaching a custom domain (e.g. `aboutjanesmith.com`)
+## Part 2 — Attaching a custom domain (e.g. `aboutjanesmith.com`)
 
-Because the GitHub OAuth App only has one registered callback URL, attaching
-a custom domain to a client site means the OAuth callback for **that specific
-site** will fail once the custom domain replaces the `.vercel.app` one as the
-primary domain, unless you keep `GATSBY_OAUTH_BASE_URL` pointed at a domain
-whose `/api/callback` matches the OAuth App's registered callback.
+Once the client's real domain is ready to go live:
 
-Two options:
+1. **Vercel → Project → Settings → Domains** — add the custom domain, set it
+   as **Primary**.
+2. Turn on **redirect to primary domain** for the `project.vercel.app`
+   domain in that same list — this 301-redirects all traffic away from the
+   `.vercel.app` URL, closing the duplicate-content risk described above.
+3. **Update this client's GitHub OAuth App** (Settings → Developer settings →
+   OAuth Apps → the app created in Part 1 step 4) — change **Authorization
+   callback URL** to `https://aboutjanesmith.com/api/callback`.
+4. **Update the `GATSBY_OAUTH_BASE_URL` env var** in Vercel to
+   `https://aboutjanesmith.com`, then trigger a redeploy (env var changes
+   only take effect on the next build).
+5. Confirm `siteUrl` in `sitedata.md` matches the final custom domain exactly
+   (protocol + no trailing slash) — this drives the canonical tag and schema.
+6. Re-test `/admin/` login on the custom domain to confirm the OAuth flow
+   still works end-to-end after the callback URL change.
 
-- **Simplest:** Leave `GATSBY_OAUTH_BASE_URL` set to the project's original
-  `*.vercel.app` domain (Vercel keeps this domain live even after a custom
-  domain is attached). CMS editors log in via `https://<project>.vercel.app/admin/`
-  regardless of what the public-facing custom domain is. This works with zero
-  extra setup — **recommended for now.**
-- **If a dedicated callback per client is ever needed:** create a separate
-  GitHub OAuth App per client (or migrate to a GitHub **App** instead of an
-  OAuth App, which does support multiple callback URLs). Not needed at
-  current scale — revisit only if this becomes a real pain point.
+From this point forward, CMS editors log in at
+`https://aboutjanesmith.com/admin/` — same domain the client sees publicly.
 
 ---
 
-## Part 4 — Migrating an existing Netlify site to Vercel
+## Part 3 — Migrating an existing Netlify site to Vercel
 
 1. In Vercel, **Add New Project → Import Git Repository**, select the
    client's existing repo (do **not** use the Deploy-with-Vercel clone
@@ -109,14 +124,35 @@ Two options:
    `MPDS-Microsite` template into the client repo first (standard process —
    add `MPDS-Microsite` as a git remote, merge `template/master`, resolve
    content conflicts keeping the client's data).
-3. Set the same 5 environment variables as in Part 2, using the *existing*
-   repo name for `GATSBY_GITHUB_REPO`.
-4. Deploy. Verify the site renders correctly and `/admin/` logs in via
+3. Create a dedicated GitHub OAuth App for this client (same as Part 1 step 4)
+   using the client's real domain as the callback URL directly, since it's
+   already live.
+4. Set the same 5 environment variables as in Part 1 step 5, using the
+   *existing* repo name for `GATSBY_GITHUB_REPO` and the real domain for
+   `GATSBY_OAUTH_BASE_URL`.
+5. Deploy. Verify the site renders correctly and `/admin/` logs in via
    GitHub.
-5. Point the client's DNS at Vercel (see Vercel's domain docs for the
-   required A/CNAME records) once verified.
-6. Leave the Netlify project in place (paused/unpublished) for a short
+6. Point the client's DNS at Vercel (see Vercel's domain docs for the
+   required A/CNAME records), set the custom domain as Primary, and enable
+   redirect-to-primary for the `.vercel.app` domain (Part 2, steps 1–2).
+7. Leave the Netlify project in place (paused/unpublished) for a short
    overlap period before deleting it, in case of DNS propagation delay.
+
+---
+
+## How content updates reach the live site
+
+Two logins exist and they do different things — don't confuse them:
+
+- **CMS login (`/admin/`, GitHub OAuth)** — where content edits happen.
+  Editor logs in, edits a post, hits save → Decap CMS commits directly to
+  the repo's `master` branch → the push triggers Vercel's Git integration →
+  Vercel automatically builds and deploys → the live domain serves the new
+  build. No manual step required. This is not instant — Gatsby is a static
+  site generator, so a build always runs first, typically **1–3 minutes**.
+- **Vercel dashboard login** — infrastructure only (env vars, domains,
+  build logs). Not part of the content-publishing loop; nobody needs to log
+  into the Vercel dashboard to publish a blog post.
 
 ---
 
@@ -128,4 +164,6 @@ Two options:
 | Build fails with an OpenSSL error (`error:0308010C`) | `vercel.json`'s `build.env.NODE_OPTIONS` is missing or was overridden in the Vercel dashboard |
 | `/admin/` shows a blank page or console error about `backend` | `GATSBY_CMS_BACKEND` env var isn't set to exactly `github` (case-sensitive), or wasn't set before the build ran (env var changes require a redeploy) |
 | Login popup opens then closes immediately with no login | `GATSBY_OAUTH_BASE_URL` doesn't match the domain the popup is actually running on, or `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` are wrong/missing |
+| GitHub shows `redirect_uri_mismatch` | The OAuth App's callback URL doesn't exactly match `GATSBY_OAUTH_BASE_URL + /api/callback` (protocol, trailing slash, or stale domain from before a custom-domain switch) |
 | Login succeeds but saves fail with a permissions error | The logged-in GitHub account isn't a collaborator (with write access) on the client's repo |
+| Site appears twice in Google (vercel.app + custom domain) | Redirect-to-primary-domain wasn't enabled for the `.vercel.app` domain (Part 2 step 2), or `siteUrl` in `sitedata.md` isn't set to the real domain |

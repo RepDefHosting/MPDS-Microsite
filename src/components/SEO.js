@@ -98,6 +98,7 @@ const SEO = ({
         content="max-snippet:-1, max-image-preview:large, max-video-preview:-1"
       />
       <meta name="description" content={metaDescription} />
+      <link rel="canonical" href={schemaData.url} />
       <meta property="og:type" content={schemaData.pageType} />
       <meta property="og:title" content={formattedTitle} />
       <meta property="og:description" content={metaDescription} />
