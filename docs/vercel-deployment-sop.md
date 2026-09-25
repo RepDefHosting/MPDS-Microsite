@@ -69,8 +69,9 @@ place.
    | Variable | Value |
    |---|---|
    | `GATSBY_CMS_BACKEND` | `github` |
-   | `GATSBY_GITHUB_REPO` | `RepDefHosting/<new-repo-name>` (exact repo you named in step 3) |
-   | `GATSBY_OAUTH_BASE_URL` | `https://<project>.vercel.app` (matches the callback URL registered in step 4) |
+   | `GATSBY_GITHUB_REPO` | `RepDefHosting/<new-repo-name>` — owner/repo only, **not** the full `https://github.com/...` URL |
+   | `GATSBY_CMS_BRANCH` | `main` — Vercel's clone flow creates repos with `main` as the default branch (Netlify-created repos use `master`) |
+   | `GATSBY_OAUTH_BASE_URL` | `https://<project>.vercel.app` — **no trailing slash**; must match the callback URL registered in step 4 |
    | `GITHUB_CLIENT_ID` | from step 4, this client's OAuth App |
    | `GITHUB_CLIENT_SECRET` | from step 4, this client's OAuth App |
 
@@ -127,9 +128,10 @@ From this point forward, CMS editors log in at
 3. Create a dedicated GitHub OAuth App for this client (same as Part 1 step 4)
    using the client's real domain as the callback URL directly, since it's
    already live.
-4. Set the same 5 environment variables as in Part 1 step 5, using the
-   *existing* repo name for `GATSBY_GITHUB_REPO` and the real domain for
-   `GATSBY_OAUTH_BASE_URL`.
+4. Set the same 6 environment variables as in Part 1 step 5, using the
+   *existing* repo name for `GATSBY_GITHUB_REPO`, the real domain for
+   `GATSBY_OAUTH_BASE_URL`, and `master` for `GATSBY_CMS_BRANCH` (existing
+   Netlify-created repos use `master`, not `main`).
 5. Deploy. Verify the site renders correctly and `/admin/` logs in via
    GitHub.
 6. Point the client's DNS at Vercel (see Vercel's domain docs for the

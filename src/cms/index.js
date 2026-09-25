@@ -103,18 +103,24 @@ const pages = [
 // - Netlify deploys use git-gateway (Netlify Identity handles auth)
 // - Vercel deploys use github (a small OAuth proxy in api/auth.js + api/callback.js
 //   handles auth) — set GATSBY_CMS_BACKEND=github in the Vercel project's env vars
+//
+// Branch: repos created by Netlify's deploy button use `master`; repos created by
+// Vercel's clone flow use `main`. Set GATSBY_CMS_BRANCH to match the repo's
+// default branch — the CMS reads and commits to this branch.
+const cmsBranch = process.env.GATSBY_CMS_BRANCH || 'master'
+
 const backend =
   process.env.GATSBY_CMS_BACKEND === 'github'
     ? {
         name: 'github',
         repo: process.env.GATSBY_GITHUB_REPO,
-        branch: 'master',
+        branch: cmsBranch,
         base_url: process.env.GATSBY_OAUTH_BASE_URL,
         auth_endpoint: 'api/auth',
       }
     : {
         name: 'git-gateway',
-        branch: 'master',
+        branch: cmsBranch,
       }
 
 CMS.init({
