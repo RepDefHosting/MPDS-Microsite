@@ -2,6 +2,7 @@
   "buildCommand": "yarn build",
   "outputDirectory": "public",
   "framework": null,
+  "trailingSlash": true,
   "build": {
     "env": {
       "NODE_OPTIONS": "--openssl-legacy-provider"
