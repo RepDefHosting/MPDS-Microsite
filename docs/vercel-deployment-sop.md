@@ -162,7 +162,7 @@ Two logins exist and they do different things — don't confuse them:
 
 | Symptom | Likely cause |
 |---|---|
-| Build fails with an engine/Node version error | Check `package.json` has `"engines": { "node": "20.x" }` and that no Vercel project setting overrides it to an older Node version |
+| Build fails with an engine/Node version error | Check `package.json` has `"engines": { "node": "24.x" }` and that no Vercel project setting overrides it to an older Node version |
 | Build fails with an OpenSSL error (`error:0308010C`) | `vercel.json`'s `build.env.NODE_OPTIONS` is missing or was overridden in the Vercel dashboard |
 | `/admin/` shows a blank page or console error about `backend` | `GATSBY_CMS_BACKEND` env var isn't set to exactly `github` (case-sensitive), or wasn't set before the build ran (env var changes require a redeploy) |
 | Login popup opens then closes immediately with no login | `GATSBY_OAUTH_BASE_URL` doesn't match the domain the popup is actually running on, or `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` are wrong/missing |

@@ -7,7 +7,7 @@ Portfolio/executive profile microsite template. Each deploy creates a new client
 - **Framework:** Gatsby 2 (React 16) — not v4/v5; some APIs differ
 - **CMS:** Netlify CMS with JavaScript config (not YAML)
 - **Package manager:** Yarn 1.22.4
-- **Node:** 20.19.0 with `--openssl-legacy-provider` (required for Gatsby 2 on Node 20)
+- **Node:** 24.x with `--openssl-legacy-provider` (required for Gatsby 2 on Node 17+). Vercel discontinued Node 20 on 2026-10-01.
 - **Deployment:** Netlify, branch: `master`
 
 ## Key Locations
@@ -213,7 +213,7 @@ yarn build           # production build (runs scripts/prebuild first)
 
 `netlify.toml` build command: `scripts/prebuild && gatsby clean && gatsby build`
 
-The `--openssl-legacy-provider` Node option is set in `netlify.toml` and is required — Gatsby 2 dependencies use legacy OpenSSL on Node 20.
+The `--openssl-legacy-provider` Node option is set in `netlify.toml` and `vercel.json` and is required — Gatsby 2 dependencies use legacy OpenSSL on Node 17+.
 
 Push to `master` triggers Netlify auto-deploy.
 
