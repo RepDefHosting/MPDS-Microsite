@@ -66,3 +66,11 @@ export function getInitials(name) {
   const initials = words.map(word => word[0].toUpperCase()).join('')
   return initials || '*'
 }
+
+// Splits a full name or header into everything before the last word and the last word,
+// so titles like "Dr. Jane Q. Smith" render in full with no word limit.
+export function splitHeading(text) {
+  const words = (text || '').split(' ').filter(word => word)
+  if (words.length < 2) return { lead: words.join(' '), last: '' }
+  return { lead: words.slice(0, -1).join(' '), last: words[words.length - 1] }
+}

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { graphql, Link } from 'gatsby'
 import { featuredImagePropTypes } from '../proptypes'
 import { useRecentPosts, useSiteData } from '../hooks'
-import { addTrailingSlash, seoProps } from '../utils'
+import { addTrailingSlash, seoProps, splitHeading } from '../utils'
 import { v4 as uuidv4 } from 'uuid'
 import Layout from '../components/Layout'
 import Banner from '../components/Banner'
@@ -178,8 +178,9 @@ export const PageTemplate = ({
                 {templateKey === 'profile-page' && (
                   <Fragment>
                     <h2>
-                      {name.split(' ')[0]}{' '}
-                      {name.split(' ')[1] && <span>{name.split(' ')[1]}</span>}
+                      {splitHeading(name).lead}
+                      {!!splitHeading(name).last && ' '}
+                      {!!splitHeading(name).last && <span>{splitHeading(name).last}</span>}
                     </h2>
                     <p className="title">{jobTitle}</p>
                     <p className="location">{location}</p>

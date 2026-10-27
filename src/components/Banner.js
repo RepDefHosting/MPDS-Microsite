@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { splitHeading } from '../utils'
 
 /**
  * Banner — editorial inner-page header.
@@ -8,6 +9,7 @@ import PropTypes from 'prop-types'
  * the prop is kept for backwards compatibility.
  */
 const Banner = ({ header, subheader, imageSrc, imageAlt, profileImage }) => {
+  const { lead: headingLead, last: headingLast } = splitHeading(header)
   const hasPortrait =
     !!profileImage &&
     !!profileImage.src &&
@@ -21,8 +23,9 @@ const Banner = ({ header, subheader, imageSrc, imageAlt, profileImage }) => {
       <div className="content-box">
         {!!header && (
           <h1>
-            {header.split(' ')[0]}{' '}
-            {header.split(' ')[1] && <span>{header.split(' ')[1]}</span>}
+            {headingLead}
+            {!!headingLast && ' '}
+            {!!headingLast && <span>{headingLast}</span>}
           </h1>
         )}
         {!!subheader && (
