@@ -69,6 +69,7 @@
     "format": "prettier --write \"{gatsby-*.js,src/**/*.js}\"",
     "start": "yarn develop",
     "serve": "gatsby serve",
+    "seed": "node scripts/seed-client.js",
     "test": "jest",
     "watch": "jest --watch",
     "test:update": "jest --updateSnapshot"
